@@ -97,7 +97,7 @@
     <label for="pago">Forma de pago</label>
     <select id="pago"></select>
 
-    <label for="nota">Nota (opcional)</label>
+    <label for="nota" id="etiqueta-nota">Nota (opcional)</label>
     <textarea id="nota" rows="2"></textarea>
 
     <a id="enviar" href="#" target="_blank" rel="noopener" aria-disabled="true">Enviar pedido por WhatsApp</a>
@@ -110,30 +110,72 @@
 <script>
 /* ============ EDITA SOLO ESTA PARTE PARA CADA CLIENTE ============ */
 const NEGOCIO = {
-  nombre: "Sabor Norteño (ejemplo)",
-  descripcion: "Así se vería tu carta: tus clientes piden y el pedido te llega ordenado a tu WhatsApp.",
-  whatsapp: "51906700890",            // tu número: los pedidos de prueba te llegan a ti
-  direccion: "Av. Ejemplo 123, Lambayeque",
-  horario: "Todos los días, 12 pm a 10 pm",
-  color: "#0f6b63",
-  delivery: 3,
-  pedidoMinimo: 0,
-  pagos: ["Yape", "Plin", "Efectivo"],
-  categorias: [
-    { nombre: "Pollo a la brasa", items: [
-      { n: "1/4 de pollo", d: "Con papas fritas y ensalada.", p: 14 },
-      { n: "1/2 pollo", d: "Con papas fritas y ensalada.", p: 27 },
-      { n: "Pollo entero", d: "Con papas, ensalada y cremas.", p: 52 }
-    ]},
-    { nombre: "Chifa", items: [
-      { n: "Arroz chaufa especial", d: "Con pollo, cerdo y tortilla.", p: 16 },
-      { n: "Tallarín saltado", d: "Con pollo y verduras.", p: 17 }
-    ]},
-    { nombre: "Bebidas", items: [
-      { n: "Inca Kola 1.5 L", d: "", p: 9 },
-      { n: "Chicha morada", d: "Jarra de un litro.", p: 8 }
-    ]}
-  ]
+  "nombre": "Sabor Norteño (ejemplo)",
+  "descripcion": "Así se vería tu carta: tus clientes piden y el pedido te llega ordenado a tu WhatsApp.",
+  "whatsapp": "51906700890",
+  "direccion": "Av. Ejemplo 123, Lambayeque",
+  "horario": "Todos los días, 12 pm a 10 pm",
+  "color": "#0f6b63",
+  "delivery": 3.0,
+  "pedidoMinimo": 0,
+  "pagos": [
+    "Yape",
+    "Plin",
+    "Efectivo"
+  ],
+  "categorias": [
+    {
+      "nombre": "Pollo a la brasa",
+      "items": [
+        {
+          "n": "1/4 de pollo",
+          "d": "Con papas y ensalada",
+          "p": 14.0
+        },
+        {
+          "n": "1/2 pollo",
+          "d": "Con papas y ensalada",
+          "p": 27.0
+        },
+        {
+          "n": "Pollo entero",
+          "d": "Con papas, ensalada y cremas",
+          "p": 52.0
+        }
+      ]
+    },
+    {
+      "nombre": "Chifa",
+      "items": [
+        {
+          "n": "Arroz chaufa especial",
+          "d": "Con pollo, cerdo y tortilla",
+          "p": 16.0
+        },
+        {
+          "n": "Tallarín saltado",
+          "d": "Con pollo y verduras",
+          "p": 17.0
+        }
+      ]
+    },
+    {
+      "nombre": "Bebidas",
+      "items": [
+        {
+          "n": "Chicha morada",
+          "d": "Jarra de un litro",
+          "p": 8.0
+        },
+        {
+          "n": "Inca Kola 1.5 L",
+          "d": "",
+          "p": 9.0
+        }
+      ]
+    }
+  ],
+  "notaEtiqueta": "Nota (opcional)"
 };
 /* ================================================================= */
 
@@ -153,6 +195,7 @@ if (!matchMedia("(prefers-color-scheme: dark)").matches) {
 }
 $("nombre").textContent = NEGOCIO.nombre;
 $("descripcion").textContent = NEGOCIO.descripcion;
+if (NEGOCIO.notaEtiqueta) $("etiqueta-nota").textContent = NEGOCIO.notaEtiqueta;
 
 NEGOCIO.categorias.forEach((cat, i) => {
   $("chips").append(el("a", { href: "#cat" + i, textContent: cat.nombre }));
