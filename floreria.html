@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pedidos por WhatsApp</title>
+<style>
+  :root {
+    --fondo: #f4f7f7; --tarjeta: #ffffff; --texto: #14201f; --suave: #5a6b69;
+    --linea: #dbe3e2; --acento: #0f6b63; --sobre-acento: #ffffff; --error: #b3261e;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fondo: #101716; --tarjeta: #18221f; --texto: #e8f0ee; --suave: #9db0ac;
+      --linea: #2a3a36; --acento: #4cc2b5; --sobre-acento: #06201c; --error: #f2b8b5;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fondo); color: var(--texto);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding-bottom: 96px; }
+  header, main, footer { max-width: 640px; margin: 0 auto; padding-left: 20px; padding-right: 20px; }
+  header { padding-top: 28px; padding-bottom: 14px; }
+  h1 { font: 700 2rem/1.15 Georgia, "Times New Roman", serif; margin: 0 0 6px; }
+  h2 { font: 700 1.25rem/1.2 Georgia, "Times New Roman", serif; margin: 0 0 8px; }
+  header p { margin: 0; color: var(--suave); }
+  nav { position: sticky; top: 0; z-index: 2; background: var(--fondo); border-bottom: 1px solid var(--linea); }
+  .chips { display: flex; gap: 8px; overflow-x: auto; max-width: 640px; margin: 0 auto; padding: 10px 20px; }
+  .chips a { flex: none; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--linea);
+    color: var(--texto); text-decoration: none; }
+  section { padding-top: 24px; scroll-margin-top: 56px; }
+  .plato { display: grid; grid-template-columns: 1fr auto; gap: 2px 14px; align-items: center;
+    padding: 14px 0; border-bottom: 1px solid var(--linea); }
+  .plato b { font-weight: 600; }
+  .plato .desc { grid-column: 1; margin: 0; color: var(--suave); font-size: .92rem; }
+  .precio { font-weight: 700; white-space: nowrap; text-align: right; }
+  .cant { grid-column: 2; grid-row: 2; display: flex; align-items: center; gap: 4px; justify-self: end; }
+  .cant button { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--linea);
+    background: var(--tarjeta); color: var(--texto); font-size: 1.3rem; cursor: pointer; }
+  .cant button.mas { background: var(--acento); color: var(--sobre-acento); border-color: var(--acento); }
+  .cant output { min-width: 28px; text-align: center; font-weight: 700; }
+  button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+    outline: 3px solid var(--acento); outline-offset: 2px; }
+  #pedido { background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 14px;
+    padding: 18px; margin-top: 32px; }
+  #resumen { list-style: none; margin: 0 0 12px; padding: 0; }
+  #resumen li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0;
+    border-bottom: 1px dashed var(--linea); }
+  .vacio { color: var(--suave); }
+  .total { display: flex; justify-content: space-between; font-weight: 700; font-size: 1.15rem; padding: 10px 0 14px; }
+  label { display: block; font-weight: 600; margin: 12px 0 4px; }
+  input, select, textarea { width: 100%; padding: 12px; border-radius: 10px; font: inherit;
+    border: 1px solid var(--linea); background: var(--fondo); color: var(--texto); }
+  .opciones { display: flex; gap: 10px; flex-wrap: wrap; }
+  .opciones label { display: flex; align-items: center; gap: 8px; font-weight: 400; margin: 0;
+    padding: 10px 14px; border: 1px solid var(--linea); border-radius: 10px; }
+  .opciones input { width: auto; }
+  #enviar { display: block; margin-top: 18px; text-align: center; padding: 14px; border-radius: 12px;
+    font-weight: 700; text-decoration: none; background: var(--acento); color: var(--sobre-acento); }
+  #enviar[aria-disabled="true"] { opacity: .45; pointer-events: none; }
+  #ayuda { margin: 8px 0 0; font-size: .9rem; color: var(--error); min-height: 1.3em; }
+  footer { padding-top: 24px; padding-bottom: 24px; color: var(--suave); font-size: .92rem; }
+  footer p { margin: 2px 0; }
+  #barra { position: fixed; left: 16px; right: 16px; bottom: 16px; max-width: 608px; margin: 0 auto;
+    display: none; justify-content: space-between; align-items: center; padding: 14px 18px;
+    border-radius: 12px; background: var(--acento); color: var(--sobre-acento);
+    font-weight: 700; text-decoration: none; }
+  #barra.visible { display: flex; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1 id="nombre"></h1>
+  <p id="descripcion"></p>
+</header>
+<nav><div class="chips" id="chips"></div></nav>
+<main>
+  <div id="carta"></div>
+
+  <section id="pedido" aria-labelledby="titulo-pedido">
+    <h2 id="titulo-pedido">Tu pedido</h2>
+    <ul id="resumen"></ul>
+    <div class="total"><span>Total</span><span id="total">S/ 0.00</span></div>
+
+    <label for="cliente">Tu nombre</label>
+    <input id="cliente" autocomplete="name">
+
+    <label>¿Cómo lo quieres?</label>
+    <div class="opciones" id="entrega"></div>
+
+    <div id="bloque-direccion">
+      <label for="direccion">Dirección y referencia</label>
+      <input id="direccion" autocomplete="street-address">
+    </div>
+
+    <label for="pago">Forma de pago</label>
+    <select id="pago"></select>
+
+    <label for="nota" id="etiqueta-nota">Nota (opcional)</label>
+    <textarea id="nota" rows="2"></textarea>
+
+    <a id="enviar" href="#" target="_blank" rel="noopener" aria-disabled="true">Enviar pedido por WhatsApp</a>
+    <p id="ayuda" role="status"></p>
+  </section>
+</main>
+<footer id="pie"></footer>
+<a id="barra" href="#pedido"><span id="barra-cant"></span><span id="barra-total"></span></a>
+
+<script>
+/* ============ EDITA SOLO ESTA PARTE PARA CADA CLIENTE ============ */
+const NEGOCIO = {
+  "nombre": "Florería Rosa Nueva (ejemplo)",
+  "descripcion": "Así se vería tu catálogo: tus clientes eligen su arreglo y el pedido te llega ordenado a tu WhatsApp.",
+  "whatsapp": "51906700890",
+  "direccion": "Av. Ejemplo 456, Chiclayo",
+  "horario": "Lunes a sábado 8 am a 8 pm, domingos 9 am a 2 pm",
+  "color": "#0f6b63",
+  "delivery": 8.0,
+  "pedidoMinimo": 0,
+  "pagos": [
+    "Yape",
+    "Plin",
+    "Transferencia"
+  ],
+  "categorias": [
+    {
+      "nombre": "Ramos",
+      "items": [
+        {
+          "n": "Ramo de 12 rosas rojas",
+          "d": "Con papel y lazo",
+          "p": 70.0
+        },
+        {
+          "n": "Ramo de girasoles",
+          "d": "Seis girasoles con follaje",
+          "p": 55.0
+        },
+        {
+          "n": "Ramo mixto grande",
+          "d": "Flores de temporada",
+          "p": 95.0
+        }
+      ]
+    },
+    {
+      "nombre": "Arreglos",
+      "items": [
+        {
+          "n": "Arreglo en caja",
+          "d": "Rosas y claveles",
+          "p": 85.0
+        },
+        {
+          "n": "Arreglo de aniversario",
+          "d": "Rosas con peluche",
+          "p": 120.0
+        }
+      ]
+    },
+    {
+      "nombre": "Extras",
+      "items": [
+        {
+          "n": "Tarjeta con dedicatoria",
+          "d": "",
+          "p": 5.0
+        },
+        {
+          "n": "Globo de helio",
+          "d": "",
+          "p": 12.0
+        },
+        {
+          "n": "Caja de chocolates",
+          "d": "Caja de 12",
+          "p": 25.0
+        }
+      ]
+    }
+  ],
+  "notaEtiqueta": "Dedicatoria, fecha y hora de entrega"
+};
+/* ================================================================= */
+
+const money = (n) => "S/ " + n.toFixed(2);
+const $ = (id) => document.getElementById(id);
+const el = (tag, props = {}, hijos = []) => {
+  const e = Object.assign(document.createElement(tag), props);
+  hijos.forEach(h => e.append(h));
+  return e;
+};
+const cantidades = new Map();   // clave "cat-item" -> cantidad
+const catalogo = [];            // lista plana de items con su clave
+
+document.title = NEGOCIO.nombre + " | Pedidos";
+if (!matchMedia("(prefers-color-scheme: dark)").matches) {
+  document.documentElement.style.setProperty("--acento", NEGOCIO.color);
+}
+$("nombre").textContent = NEGOCIO.nombre;
+$("descripcion").textContent = NEGOCIO.descripcion;
+if (NEGOCIO.notaEtiqueta) $("etiqueta-nota").textContent = NEGOCIO.notaEtiqueta;
+
+NEGOCIO.categorias.forEach((cat, i) => {
+  $("chips").append(el("a", { href: "#cat" + i, textContent: cat.nombre }));
+  const sec = el("section", { id: "cat" + i }, [el("h2", { textContent: cat.nombre })]);
+  cat.items.forEach((it, j) => {
+    const clave = i + "-" + j;
+    catalogo.push({ clave, ...it });
+    const salida = el("output", { textContent: "0" });
+    salida.id = "q" + clave;
+    const menos = el("button", { type: "button", textContent: "−" });
+    const mas = el("button", { type: "button", textContent: "+", className: "mas" });
+    menos.setAttribute("aria-label", "Quitar uno de " + it.n);
+    mas.setAttribute("aria-label", "Agregar uno de " + it.n);
+    menos.onclick = () => cambiar(clave, -1);
+    mas.onclick = () => cambiar(clave, 1);
+    sec.append(el("div", { className: "plato" }, [
+      el("b", { textContent: it.n }),
+      el("span", { className: "precio", textContent: money(it.p) }),
+      el("p", { className: "desc", textContent: it.d }),
+      el("div", { className: "cant" }, [menos, salida, mas])
+    ]));
+  });
+  $("carta").append(sec);
+});
+
+/* Entrega */
+const opcionesEntrega = [["recojo", "Recojo en tienda"]];
+if (NEGOCIO.delivery !== null) opcionesEntrega.push(["delivery", "Delivery"]);
+opcionesEntrega.forEach(([valor, texto], k) => {
+  const radio = el("input", { type: "radio", name: "entrega", value: valor, checked: k === 0 });
+  radio.onchange = actualizar;
+  $("entrega").append(el("label", {}, [radio, texto]));
+});
+NEGOCIO.pagos.forEach(p => $("pago").append(el("option", { value: p, textContent: p })));
+["cliente", "direccion", "pago", "nota"].forEach(id => $(id).addEventListener("input", actualizar));
+
+$("pie").append(el("p", { textContent: NEGOCIO.direccion }), el("p", { textContent: NEGOCIO.horario }));
+
+function cambiar(clave, delta) {
+  const nueva = Math.max(0, (cantidades.get(clave) || 0) + delta);
+  cantidades.set(clave, nueva);
+  $("q" + clave).textContent = nueva;
+  actualizar();
+}
+
+function entregaActual() { return document.querySelector("input[name=entrega]:checked").value; }
+
+function actualizar() {
+  const elegidos = catalogo.filter(it => (cantidades.get(it.clave) || 0) > 0);
+  const subtotal = elegidos.reduce((s, it) => s + it.p * cantidades.get(it.clave), 0);
+  const esDelivery = entregaActual() === "delivery";
+  const envio = esDelivery ? NEGOCIO.delivery : 0;
+  const total = subtotal + (elegidos.length ? envio : 0);
+  const unidades = elegidos.reduce((s, it) => s + cantidades.get(it.clave), 0);
+
+  const lista = $("resumen");
+  lista.replaceChildren();
+  if (!elegidos.length) lista.append(el("li", { className: "vacio", textContent: "Aún no agregaste nada." }));
+  elegidos.forEach(it => lista.append(el("li", {}, [
+    el("span", { textContent: cantidades.get(it.clave) + " × " + it.n }),
+    el("span", { textContent: money(it.p * cantidades.get(it.clave)) })
+  ])));
+  if (elegidos.length && esDelivery && envio > 0) {
+    lista.append(el("li", {}, [el("span", { textContent: "Delivery" }), el("span", { textContent: money(envio) })]));
+  }
+  $("total").textContent = money(total);
+  $("bloque-direccion").style.display = esDelivery ? "block" : "none";
+  $("barra").classList.toggle("visible", unidades > 0);
+  $("barra-cant").textContent = unidades + (unidades === 1 ? " producto" : " productos") + " · Ver pedido";
+  $("barra-total").textContent = money(total);
+
+  let falta = "";
+  if (!elegidos.length) falta = "Agrega al menos un producto.";
+  else if (subtotal < NEGOCIO.pedidoMinimo) falta = "El pedido mínimo es " + money(NEGOCIO.pedidoMinimo) + ".";
+  else if (!$("cliente").value.trim()) falta = "Escribe tu nombre.";
+  else if (esDelivery && !$("direccion").value.trim()) falta = "Escribe tu dirección para el delivery.";
+  $("ayuda").textContent = elegidos.length ? falta : "";
+
+  const lineas = ["Hola, quiero hacer un pedido:"];
+  elegidos.forEach(it => lineas.push("• " + cantidades.get(it.clave) + " x " + it.n + " — " + money(it.p * cantidades.get(it.clave))));
+  if (esDelivery && envio > 0) lineas.push("Delivery: " + money(envio));
+  lineas.push("Total: " + money(total), "");
+  lineas.push("Nombre: " + $("cliente").value.trim());
+  lineas.push(esDelivery ? "Delivery a: " + $("direccion").value.trim() : "Recojo en tienda");
+  lineas.push("Pago: " + $("pago").value);
+  if ($("nota").value.trim()) lineas.push("Nota: " + $("nota").value.trim());
+
+  const boton = $("enviar");
+  boton.href = "https://wa.me/" + NEGOCIO.whatsapp + "?text=" + encodeURIComponent(lineas.join("\n"));
+  boton.setAttribute("aria-disabled", falta ? "true" : "false");
+}
+actualizar();
+</script>
+</body>
+</html>
